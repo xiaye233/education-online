@@ -24,7 +24,7 @@ object CourseLearnStreaming {
       .set("spark.streaming.kafka.maxRatePerPartition", "30")
       .set("spark.streaming.backpressure.enabled", "true")
       .set("spark.streaming.stopGracefullyOnShutdown", "true")
-//      .setMaster("local[*]")
+    //      .setMaster("local[*]")
     val ssc = new StreamingContext(conf, Seconds(3))
     val topics = Array("course_learn")
     val kafkaMap: Map[String, Object] = Map[String, Object](
@@ -88,19 +88,20 @@ object CourseLearnStreaming {
     dsStream.foreachRDD(rdd => {
       rdd.cache()
       //统计播放视频 有效时长 完成时长 总时长
-      rdd.groupBy(item => item.userId + "_" + item.cwareId + "_" + item.videoId).foreachPartition(partitoins => {
-        val sqlProxy = new SqlProxy()
-        val client = DataSourceUtil.getConnection
-        try {
-          partitoins.foreach { case (key, iters) =>
-            calcVideoTime(key, iters, sqlProxy, client) //计算视频时长
+      rdd.groupBy(item => item.userId + "_" + item.cwareId + "_" + item.videoId)
+        .foreachPartition(partitoins => {
+          val sqlProxy = new SqlProxy()
+          val client = DataSourceUtil.getConnection
+          try {
+            partitoins.foreach { case (key, iters) =>
+              calcVideoTime(key, iters, sqlProxy, client) //计算视频时长
+            }
+          } catch {
+            case e: Exception => e.printStackTrace()
+          } finally {
+            sqlProxy.shutdown(client)
           }
-        } catch {
-          case e: Exception => e.printStackTrace()
-        } finally {
-          sqlProxy.shutdown(client)
-        }
-      })
+        })
       //统计章节下视频播放总时长
       rdd.mapPartitions(partitions => {
         partitions.map(item => {
@@ -234,13 +235,13 @@ object CourseLearnStreaming {
   }
 
   /**
-    * 计算视频 有效时长  完成时长 总时长
-    *
-    * @param key
-    * @param iters
-    * @param sqlProxy
-    * @param client
-    */
+   * 计算视频 有效时长  完成时长 总时长
+   *
+   * @param key
+   * @param iters
+   * @param sqlProxy
+   * @param client
+   */
   def calcVideoTime(key: String, iters: Iterable[LearnModel], sqlProxy: SqlProxy, client: Connection) = {
     val keys = key.split("_")
     val userId = keys(0).toInt
@@ -293,13 +294,13 @@ object CourseLearnStreaming {
   }
 
   /**
-    * 计算有效区间
-    *
-    * @param array
-    * @param start
-    * @param end
-    * @return
-    */
+   * 计算有效区间
+   *
+   * @param array
+   * @param start
+   * @param end
+   * @return
+   */
   def getEffectiveInterval(array: Array[String], start: Int, end: Int) = {
     var effective_duration = end - start
     var bl = false //是否对有效时间进行修改

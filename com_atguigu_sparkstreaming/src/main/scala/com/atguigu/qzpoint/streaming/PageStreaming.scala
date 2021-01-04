@@ -32,6 +32,7 @@ object PageStreaming {
       .set("spark.streaming.stopGracefullyOnShutdown", "true")
 //      .setMaster("local[*]")
     val ssc = new StreamingContext(conf, Seconds(3))
+
     val topics = Array("page_topic")
     val kafkaMap: Map[String, Object] = Map[String, Object](
       "bootstrap.servers" -> "hadoop102:9092,hadoop103:9092,hadoop104:9092",
